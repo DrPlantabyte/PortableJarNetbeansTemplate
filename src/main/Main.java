@@ -26,8 +26,7 @@ import java.util.logging.Logger;
  */
 public class Main {
 	/** Name of the application, used for creating install folders */
-		// TODO: make template automatically fill in the following line
-	public static final String APP_NAME = "javaApp"; // change to name of this project
+	public static final String APP_NAME = "__PROJECTNAME__"; // change to name of this project
 	
 	/** Change this field to change how resources are extracted. Can be set by 
 	 * using the switch <code>-Dinstall.mode</code> switch. Allowed options are:<br/>
@@ -47,8 +46,7 @@ public class Main {
 	public static void main(String[] args){
 		preInit();
 		
-	//	TODO: make template automatically fill in the following line
-	//	myapp.MyMain.main(args); // uncomment and replace with your main method invocation
+		//__PROJECTMAINMETHOD__
 		
 	}
 	
