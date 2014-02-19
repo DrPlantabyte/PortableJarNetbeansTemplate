@@ -66,6 +66,7 @@ public class Main {
 			initLock.unlock();
 		}
 		Logger.getLogger(Main.class.getName()).log(Level.INFO,"Launching "+APP_NAME);
+		// TODO: make template automatically fill in the following line
 	//	myapp.MyMain.main(args); // uncomment and replace with your main method invocation
 	}
 	/**
