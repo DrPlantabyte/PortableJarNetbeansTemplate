@@ -26,10 +26,32 @@ import java.util.logging.Logger;
  */
 public class Main {
 	/** Name of the application, used for creating install folders */
+		// TODO: make template automatically fill in the following line
 	public static final String APP_NAME = "javaApp"; // change to name of this project
 	
-	/** Change this field to change how resources are extracted */
-	private static RunType INSTALL_MODE = RunType.TEMP_FOLDER;
+	/** Change this field to change how resources are extracted. Can be set by 
+	 * using the switch <code>-Dinstall.mode</code> switch. Allowed options are:<br/>
+	 * <code>-Dinstall.mode="1"</code> for TEMP_FOLDER<br/>
+	 * <code>-Dinstall.mode="2"</code> for TRANSIENT_PORTABLE<br/>
+	 * <code>-Dinstall.mode="3"</code> for PERSISTANT_PORTABLE<br/>
+	 * <code>-Dinstall.mode="4"</code> for PERSISTANT_INSTALL<br/>
+	 * */
+	private static RunType INSTALL_MODE = RunType.TEMP_FOLDER; // Change this to desired runtype
+	
+	/**
+	 * Point of entry for the program. This method starts with initialization of 
+	 * the environment and unpacking of the resources, then invokes the main 
+	 * method of the project.
+	 * @param args Array of comand line arguments
+	 */
+	public static void main(String[] args){
+		preInit();
+		
+	//	TODO: make template automatically fill in the following line
+	//	myapp.MyMain.main(args); // uncomment and replace with your main method invocation
+		
+	}
+	
 	/** The properties returned by <code> System.getProperties();</code> */
 	private static Properties SYSTEM_PROPERTIES = new Properties();
 	/** This is the location where the files will be unpacked. */
@@ -40,47 +62,17 @@ public class Main {
 	private static boolean OVERWRITE_RESOURCES = true;
 	/** JarFile instance pointing to the .jar file */
 	private static JarFile JAR_FILE = null;
-	/** Lock used to prevent spawned threadsfrom getting ahead of the initializer */
+	/** Lock used to prevent spawned threads from getting ahead of the initializer */
 	private static final Lock initLock = new ReentrantLock();
-	
+	/** Used to prevent spawned threads from getting ahead of the initializer */
 	private static AtomicBoolean initializationComplete = new AtomicBoolean (false);
 	
-	public static void main(String[] args){
-		try {
-			initLock.lock();
-			Logger.getLogger(Main.class.getName()).log(Level.INFO,"Preparing to launch "+APP_NAME);
-			readEnv();
-			unpack();
-			initializationComplete.set(true);
-			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tAPP_NAME: "+APP_NAME);
-			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tINSTALL_MODE: "+INSTALL_MODE.name());
-			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tPROGRAM_DIRECTORY: "+PROGRAM_DIRECTORY);
-			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tDELETE_ON_EXIT: "+DELETE_ON_EXIT);
-			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tOVERWRITE_RESOURCES: "+OVERWRITE_RESOURCES);
-			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tJAR_FILE: "+JAR_FILE.getName());
-			Logger.getLogger(Main.class.getName()).log(Level.FINEST,"\tSYSTEM_PROPERTIES: \n"+SYSTEM_PROPERTIES);
-		} catch (IOException | SecurityException | IllegalArgumentException ex) {
-			Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Failed to initialize program", ex);
-			System.exit(ex.getClass().getName().hashCode());
-		}finally{
-			initLock.unlock();
-		}
-		Logger.getLogger(Main.class.getName()).log(Level.INFO,"Launching "+APP_NAME);
-		// TODO: make template automatically fill in the following line
-	//	myapp.MyMain.main(args); // uncomment and replace with your main method invocation
-	}
 	/**
 	 * Reads the environment variables and sets parameters based on host system data.
 	 * @throws IOException Thrown if there was a problem reading or writing a file
 	 */
 	private static void readEnv() throws IOException{
-		try {
-			if (System.getProperties() != null) {
-				SYSTEM_PROPERTIES = System.getProperties();
-			}
-		} catch (SecurityException ex) {
-			Logger.getLogger(Main.class.getName()).log(Level.WARNING, "Security manager prevented access to System.getProperties()", ex);
-		}
+		
 		Path jarDir = null;
 		try {
 				JAR_FILE = getJarFile();
@@ -202,7 +194,7 @@ public class Main {
 	 * path in the place of using the OS-dependant file separator.
 	 * @return A Path pointing to the indicated resource. 
 	 */
-	public Path getResource(String... filepath){
+	public static Path getResource(String... filepath){
 		if(initializationComplete.get() == false){
 			initLock.tryLock(); // wait for init to complete
 			initLock.unlock();
@@ -263,6 +255,57 @@ public class Main {
 		} catch (URISyntaxException ex) {
 			throw new IOException("Error parsing URI '"+Main.class.getProtectionDomain().getCodeSource().getLocation().toString()+"'");
 		}
+	}
+	/** invoke once AND ONLY ONCE at the EARLIEST POSSIBLE TIME */
+	private static void preInit() {
+		try {
+			initLock.lock();
+			Logger.getLogger(Main.class.getName()).log(Level.INFO,"Preparing to launch "+APP_NAME);
+			try {
+				if (System.getProperties() != null) {
+					SYSTEM_PROPERTIES = System.getProperties();
+				}
+			} catch (SecurityException ex) {
+				Logger.getLogger(Main.class.getName()).log(Level.WARNING, "Security manager prevented access to System.getProperties()", ex);
+			}
+			if(SYSTEM_PROPERTIES.contains("install.mode")){
+				// change run mode based on parameter
+				String mode = SYSTEM_PROPERTIES.getProperty("install.mode");
+				switch(mode){
+					case "1":
+						INSTALL_MODE = RunType.TEMP_FOLDER;
+						break;
+					case "2":
+						INSTALL_MODE = RunType.TRANSIENT_PORTABLE;
+						break;
+					case "3":
+						INSTALL_MODE = RunType.PERSISTANT_PORTABLE;
+						break;
+					case "4":
+						INSTALL_MODE = RunType.PERSISTANT_INSTALL;
+						break;
+					default:
+						Logger.getLogger(Main.class.getName()).log(Level.WARNING,"Warning: Property 'install.mode' has unrecognized value of '"+mode+"'. Defaulting to '"+INSTALL_MODE.name()+"'");
+						break;
+				}
+			}
+			readEnv();
+			unpack();
+			initializationComplete.set(true);
+			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tAPP_NAME: "+APP_NAME);
+			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tINSTALL_MODE: "+INSTALL_MODE.name());
+			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tPROGRAM_DIRECTORY: "+PROGRAM_DIRECTORY);
+			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tDELETE_ON_EXIT: "+DELETE_ON_EXIT);
+			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tOVERWRITE_RESOURCES: "+OVERWRITE_RESOURCES);
+			Logger.getLogger(Main.class.getName()).log(Level.FINE,"\tJAR_FILE: "+JAR_FILE.getName());
+			Logger.getLogger(Main.class.getName()).log(Level.FINEST,"\tSYSTEM_PROPERTIES: \n"+SYSTEM_PROPERTIES);
+		} catch (IOException | SecurityException | IllegalArgumentException ex) {
+			Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Failed to initialize program", ex);
+			System.exit(ex.getClass().getName().hashCode());
+		}finally{
+			initLock.unlock();
+		}
+		Logger.getLogger(Main.class.getName()).log(Level.INFO,"Launching "+APP_NAME);
 	}
 
 	

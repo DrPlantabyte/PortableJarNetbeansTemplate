@@ -11,7 +11,7 @@
     <description>Builds, tests, and runs the project PortableJarNetbeansTemplate.</description>
     <import file="nbproject/build-impl.xml"/>
     
-	
+	<!-- put the libs and stuff in the jar -->
 	<target name="-post-jar">
 		<echo>Adding lib and resource files to jar...</echo>
 		<jar destfile="${dist.jar}" update="true">
@@ -24,8 +24,11 @@
 				<include name="**/data/**"/>
 			</fileset>
 		</jar>
+		<!-- remove the libs folder (it's redundant) -->
+		<delete dir="${dist.dir}/lib" />
 	</target>
 	
+	<!-- override the run functionality to execute the jar instead of normal behavior -->
 	<target name="run" depends="init,compile,jar" description="Run the main class from the jar file.">
 		<java jar="${dist.jar}" fork="false">
 			<arg line="${application.args}"/>
